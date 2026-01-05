@@ -1,0 +1,16 @@
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#14b8a6"/>
+      <stop offset="100%" style="stop-color:#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <!-- Y -->
+  <path d="M8 8L16 20V32H22V20L30 8H23L19 15L15 8H8Z" fill="url(#logoGradient)"/>
+  <!-- O -->
+  <ellipse cx="48" cy="20" rx="12" ry="12" stroke="url(#logoGradient)" stroke-width="6" fill="none"/>
+  <!-- T -->
+  <path d="M70 8H94V14H85V32H79V14H70V8Z" fill="url(#logoGradient)"/>
+  <!-- Decorative dot -->
+  <circle cx="110" cy="28" r="4" fill="url(#logoGradient)"/>
+</svg>
