@@ -7,6 +7,14 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import CompanySettings from './pages/CompanySettings';
+import Accounting from './pages/Accounting';
+import Invoicing from './pages/Invoicing';
+import Payables from './pages/Payables';
+import Inventory from './pages/Inventory';
+import Banking from './pages/Banking';
+
+import Payroll from './pages/Payroll';
+import DataMigration from './pages/DataMigration';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
@@ -44,6 +52,14 @@ export default function App() {
           }>
             <Route index element={<Dashboard />} />
             <Route path="company/settings" element={<CompanySettings />} />
+            <Route path="accounting" element={<Accounting />} />
+            <Route path="invoicing" element={<Invoicing />} />
+            <Route path="payables" element={<Payables />} />
+            <Route path="inventory" element={<Inventory />} />
+            <Route path="banking" element={<Banking />} />
+
+            <Route path="payroll" element={<Payroll />} />
+            <Route path="migration" element={<DataMigration />} />
           </Route>
         </Routes>
       </BrowserRouter>

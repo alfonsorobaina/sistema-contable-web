@@ -25,11 +25,18 @@ export interface CreateCompanyData {
 export interface CompanyMember {
     id: string;
     user_id: string;
-    company_id: string;
     role: 'admin' | 'accountant' | 'member' | 'viewer';
     created_at: string;
-    profile?: {
-        full_name: string | null;
-        avatar_url: string | null;
-    };
+    email: string;
+    full_name: string | null;
+    avatar_url: string | null;
+}
+
+export interface CompanyInvitation {
+    id: string;
+    email: string;
+    role: 'admin' | 'accountant' | 'member' | 'viewer';
+    status: 'pending' | 'accepted' | 'expired' | 'cancelled';
+    created_at: string;
+    expires_at: string;
 }

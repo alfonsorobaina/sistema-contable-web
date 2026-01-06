@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCompany, CompanyProvider } from '../context/CompanyContext';
 import CompanySelector from '../components/CompanySelector';
 import CreateCompanyModal from '../components/CreateCompanyModal';
-import { LogOut, User, Menu, X, LayoutDashboard, FileText, Users, Settings, ChevronRight } from 'lucide-react';
+import { LogOut, User, Menu, X, LayoutDashboard, FileText, Users, Settings, ChevronRight, Receipt, Wallet, Package, Building2, Database } from 'lucide-react';
 import yotLogo from '../assets/yot-logo.png';
 
 function LayoutContent() {
@@ -16,7 +16,13 @@ function LayoutContent() {
 
     const navigation = [
         { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-        { name: 'Contabilidad', href: '/accounting', icon: FileText, disabled: true },
+        { name: 'Contabilidad', href: '/accounting', icon: FileText },
+        { name: 'Facturación', href: '/invoicing', icon: Receipt },
+        { name: 'CxC / CxP', href: '/payables', icon: Wallet },
+        { name: 'Inventario', href: '/inventory', icon: Package },
+        { name: 'Bancos', href: '/banking', icon: Building2 },
+        { name: 'Nómina', href: '/payroll', icon: Users },
+        { name: 'Migración IA', href: '/migration', icon: Database },
         { name: 'Usuarios', href: '/users', icon: Users, disabled: true },
         { name: 'Configuración', href: '/company/settings', icon: Settings },
     ];

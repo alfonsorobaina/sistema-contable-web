@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useCompany } from '../context/CompanyContext';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
+import InviteMemberModal from '../components/InviteMemberModal';
 import {
     Building2,
     Save,
@@ -12,15 +14,30 @@ import {
     Shield,
     Loader2,
     ArrowLeft,
-    Check
+    Check,
+    UserPlus,
+    MoreVertical,
+    Trash2,
+    Clock
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const ROLE_LABELS: Record<string, { label: string; color: string }> = {
+    admin: { label: 'Administrador', color: 'bg-violet-100 text-violet-700' },
+    accountant: { label: 'Contador', color: 'bg-blue-100 text-blue-700' },
+    member: { label: 'Miembro', color: 'bg-emerald-100 text-emerald-700' },
+    viewer: { label: 'Visualizador', color: 'bg-gray-100 text-gray-600' },
+};
+
 export default function CompanySettings() {
-    const { activeCompany, refreshCompanies } = useCompany();
+    const { user } = useAuth();
+    const { activeCompany, refreshCompanies, members, invitations, loadingMembers, updateMemberRole, removeMember, refreshMembers } = useCompany();
     const [loading, setLoading] = useState(false);
     const [saved, setSaved] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showInviteModal, setShowInviteModal] = useState(false);
+    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -77,6 +94,28 @@ export default function CompanySettings() {
 
     const updateField = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleRoleChange = async (memberId: string, newRole: string) => {
+        setActionLoading(memberId);
+        await updateMemberRole(memberId, newRole);
+        setOpenMenuId(null);
+        setActionLoading(null);
+    };
+
+    const handleRemoveMember = async (memberId: string) => {
+        if (!confirm('¿Estás seguro de eliminar este miembro?')) return;
+        setActionLoading(memberId);
+        await removeMember(memberId);
+        setOpenMenuId(null);
+        setActionLoading(null);
+    };
+
+    const getInitials = (name: string | null, email: string) => {
+        if (name) {
+            return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        }
+        return email[0].toUpperCase();
     };
 
     if (!activeCompany) {
@@ -272,22 +311,145 @@ export default function CompanySettings() {
                 </form>
             </div>
 
-            {/* Sección de Miembros (preview) */}
+            {/* Sección de Miembros */}
             <div className="mt-6 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Users size={18} className="text-gray-400" />
                         <h2 className="font-semibold text-gray-800">Miembros del Equipo</h2>
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                            {members.length}
+                        </span>
                     </div>
-                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full">
-                        Próximamente
-                    </span>
+                    {isAdmin && (
+                        <button
+                            onClick={() => setShowInviteModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-sm font-medium shadow-lg shadow-teal-500/25 hover:shadow-teal-500/40 transition-all"
+                        >
+                            <UserPlus size={16} />
+                            Invitar
+                        </button>
+                    )}
                 </div>
-                <div className="p-6 text-center text-gray-500">
-                    <Users size={40} className="mx-auto mb-3 text-gray-300" />
-                    <p>La gestión de miembros estará disponible pronto</p>
+
+                <div className="divide-y divide-gray-100">
+                    {loadingMembers ? (
+                        <div className="p-8 text-center">
+                            <Loader2 size={24} className="mx-auto text-gray-400 animate-spin" />
+                        </div>
+                    ) : members.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500">
+                            <Users size={40} className="mx-auto mb-3 text-gray-300" />
+                            <p>No hay miembros en esta empresa</p>
+                        </div>
+                    ) : (
+                        members.map((member) => (
+                            <div key={member.id} className="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                                {/* Avatar */}
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white text-sm font-bold">
+                                    {getInitials(member.full_name, member.email)}
+                                </div>
+
+                                {/* Info */}
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                        {member.full_name || member.email}
+                                        {member.user_id === user?.id && (
+                                            <span className="ml-2 text-xs text-gray-400">(Tú)</span>
+                                        )}
+                                    </p>
+                                    <p className="text-xs text-gray-500 truncate">{member.email}</p>
+                                </div>
+
+                                {/* Rol */}
+                                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${ROLE_LABELS[member.role]?.color || 'bg-gray-100 text-gray-600'}`}>
+                                    {ROLE_LABELS[member.role]?.label || member.role}
+                                </span>
+
+                                {/* Acciones */}
+                                {isAdmin && member.user_id !== user?.id && (
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setOpenMenuId(openMenuId === member.id ? null : member.id)}
+                                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                                            disabled={actionLoading === member.id}
+                                        >
+                                            {actionLoading === member.id ? (
+                                                <Loader2 size={16} className="animate-spin text-gray-400" />
+                                            ) : (
+                                                <MoreVertical size={16} className="text-gray-400" />
+                                            )}
+                                        </button>
+
+                                        {openMenuId === member.id && (
+                                            <>
+                                                <div className="fixed inset-0" onClick={() => setOpenMenuId(null)} />
+                                                <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-10">
+                                                    <p className="px-3 py-1.5 text-xs text-gray-400 uppercase tracking-wider">Cambiar rol</p>
+                                                    {Object.entries(ROLE_LABELS).map(([role, { label }]) => (
+                                                        <button
+                                                            key={role}
+                                                            onClick={() => handleRoleChange(member.id, role)}
+                                                            disabled={member.role === role}
+                                                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${member.role === role ? 'text-teal-600 font-medium' : 'text-gray-700'}`}
+                                                        >
+                                                            {label} {member.role === role && '✓'}
+                                                        </button>
+                                                    ))}
+                                                    <div className="border-t border-gray-100 mt-1 pt-1">
+                                                        <button
+                                                            onClick={() => handleRemoveMember(member.id)}
+                                                            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                            Eliminar miembro
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    )}
+
+                    {/* Invitaciones pendientes */}
+                    {invitations.length > 0 && (
+                        <>
+                            <div className="px-6 py-3 bg-amber-50">
+                                <p className="text-xs font-medium text-amber-700 uppercase tracking-wider flex items-center gap-2">
+                                    <Clock size={14} />
+                                    Invitaciones Pendientes ({invitations.length})
+                                </p>
+                            </div>
+                            {invitations.map((inv) => (
+                                <div key={inv.id} className="px-6 py-4 flex items-center gap-4 bg-amber-50/50">
+                                    <div className="w-10 h-10 rounded-full bg-amber-200 flex items-center justify-center text-amber-700 text-sm font-bold">
+                                        {inv.email[0].toUpperCase()}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-gray-700 truncate">{inv.email}</p>
+                                        <p className="text-xs text-gray-500">Pendiente de registro</p>
+                                    </div>
+                                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${ROLE_LABELS[inv.role]?.color || 'bg-gray-100 text-gray-600'}`}>
+                                        {ROLE_LABELS[inv.role]?.label || inv.role}
+                                    </span>
+                                </div>
+                            ))}
+                        </>
+                    )}
                 </div>
             </div>
+
+            {/* Modal de invitación */}
+            <InviteMemberModal
+                isOpen={showInviteModal}
+                onClose={() => {
+                    setShowInviteModal(false);
+                    refreshMembers();
+                }}
+            />
         </div>
     );
 }
